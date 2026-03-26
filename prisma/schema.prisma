@@ -378,24 +378,26 @@ model Session {
 }
 
 model UsageCost {
-  id        String   @id @default(uuid())
-  projectId String
-  userId    String
-  apiType   String
-  model     String
-  action    String
-  quantity  Int
-  unit      String
-  cost      Decimal  @db.Decimal(18, 6)
-  metadata  String?  @db.Text
-  createdAt DateTime @default(now())
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  projectId         String
+  userId            String
+  apiType           String
+  model             String
+  action            String
+  quantity          Int
+  unit              String
+  cost              Decimal  @db.Decimal(18, 6)
+  metadata          String?  @db.Text
+  syncedToHanggent  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([apiType])
   @@index([createdAt])
   @@index([projectId])
   @@index([userId])
+  @@index([syncedToHanggent])
   @@map("usage_costs")
 }
 

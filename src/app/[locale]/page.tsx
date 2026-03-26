@@ -8,11 +8,13 @@ import { useRouter } from '@/i18n/navigation'
 import Navbar from '@/components/Navbar'
 import { Link } from '@/i18n/navigation'
 import { buildAuthenticatedHomeTarget } from '@/lib/home/default-route'
+import { useIsEmbedded } from '@/hooks/common/useIsEmbedded'
 
 export default function Home() {
   const t = useTranslations('landing')
   const { data: session, status } = useSession()
   const router = useRouter()
+  const isEmbedded = useIsEmbedded()
 
   // 已登录用户自动跳转到 home
   useEffect(() => {
@@ -64,12 +66,14 @@ export default function Home() {
               </h1>
 
               <div className="flex flex-wrap gap-4 pt-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
-                <Link
-                  href={{ pathname: '/auth/signup' }}
-                  className="glass-btn-base glass-btn-primary px-8 py-4 rounded-xl font-semibold transition-all duration-300"
-                >
-                  {t('getStarted')}
-                </Link>
+                {!isEmbedded && (
+                  <Link
+                    href={{ pathname: '/auth/signup' }}
+                    className="glass-btn-base glass-btn-primary px-8 py-4 rounded-xl font-semibold transition-all duration-300"
+                  >
+                    {t('getStarted')}
+                  </Link>
+                )}
               </div>
             </div>
 

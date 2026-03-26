@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTranslations } from 'next-intl'
 import Navbar from "@/components/Navbar"
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator"
 import { apiFetch } from '@/lib/api-fetch'
 import { Link, useRouter } from '@/i18n/navigation'
+import { useIsEmbedded } from '@/hooks/common/useIsEmbedded'
+import { buildAuthenticatedHomeTarget } from '@/lib/home/default-route'
 
 export default function SignUp() {
   const [name, setName] = useState("")
@@ -16,6 +18,16 @@ export default function SignUp() {
   const [success, setSuccess] = useState("")
   const router = useRouter()
   const t = useTranslations('auth')
+  const isEmbedded = useIsEmbedded()
+
+  // When embedded in hanggent iframe, auth is handled by HanggentAuthBridge
+  useEffect(() => {
+    if (isEmbedded) {
+      router.replace(buildAuthenticatedHomeTarget())
+    }
+  }, [isEmbedded, router])
+
+  if (isEmbedded) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

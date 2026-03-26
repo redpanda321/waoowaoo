@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar'
 import ApiConfigTab from './components/ApiConfigTab'
 import { AppIcon } from '@/components/ui/icons'
 import { useRouter } from '@/i18n/navigation'
+import { useIsEmbedded } from '@/hooks/common/useIsEmbedded'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -15,6 +16,7 @@ export default function ProfilePage() {
 
   // 主要分区：扣费记录 / API配置
   const [activeSection, setActiveSection] = useState<'billing' | 'apiConfig'>('apiConfig')
+  const isEmbedded = useIsEmbedded()
 
   useEffect(() => {
     if (status === 'loading') return
@@ -81,13 +83,15 @@ export default function ProfilePage() {
                 </button>
               </nav>
               {/* 退出登录 */}
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="glass-btn-base glass-btn-tone-danger mt-auto flex items-center gap-2 px-4 py-3 text-sm rounded-xl transition-all cursor-pointer"
-              >
-                <AppIcon name="logout" className="w-4 h-4" />
-                {t('logout')}
-              </button>
+              {!isEmbedded && (
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="glass-btn-base glass-btn-tone-danger mt-auto flex items-center gap-2 px-4 py-3 text-sm rounded-xl transition-all cursor-pointer"
+                >
+                  <AppIcon name="logout" className="w-4 h-4" />
+                  {t('logout')}
+                </button>
+              )}
             </div>
           </div>
 

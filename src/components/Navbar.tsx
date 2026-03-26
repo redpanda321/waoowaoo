@@ -10,6 +10,7 @@ import UpdateNoticeModal from './UpdateNoticeModal'
 import { useGithubReleaseUpdate } from '@/hooks/common/useGithubReleaseUpdate'
 import { Link } from '@/i18n/navigation'
 import { buildAuthenticatedHomeTarget } from '@/lib/home/default-route'
+import { useIsEmbedded } from '@/hooks/common/useIsEmbedded'
 
 
 export default function Navbar() {
@@ -21,6 +22,7 @@ export default function Navbar() {
   const [checkMsgFading, setCheckMsgFading] = useState(false)
   const [manualChecking, setManualChecking] = useState(false)
   const downloadLogsHref = '/api/admin/download-logs'
+  const isEmbedded = useIsEmbedded()
 
   const handleCheckUpdate = async () => {
     setCheckMsg(null)
@@ -137,7 +139,7 @@ export default function Navbar() {
                   </a>
                 </>
 
-              ) : (
+              ) : !isEmbedded ? (
                 <>
                   <Link
                     href={{ pathname: '/auth/signin' }}
@@ -153,6 +155,8 @@ export default function Navbar() {
                   </Link>
                   <LanguageSwitcher />
                 </>
+              ) : (
+                <LanguageSwitcher />
               )}
             </div>
           </div>
