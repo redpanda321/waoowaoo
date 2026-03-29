@@ -6,6 +6,7 @@
 import { getServerSession } from 'next-auth/next'
 import { NextResponse } from 'next/server'
 import { headers as readHeaders } from 'next/headers'
+import * as jose from 'jose'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { withPrismaRetry } from '@/lib/prisma-retry'
@@ -52,6 +53,59 @@ async function getInternalTaskSession(): Promise<AuthSession | null> {
             id: userId,
             name: 'internal-worker',
             email: null,
+        }
+    }
+}
+
+/**
+ * Verify a Hanggent HS256 JWT Bearer token and return (or auto-create) the
+ * corresponding waoowaoo user.  This mirrors the "hanggent" CredentialsProvider
+ * in auth.ts but works stateless — no cookie / NextAuth session required.
+ */
+async function getHanggentBearerSession(): Promise<AuthSession | null> {
+    const hanggentSecret = process.env.HANGGENT_JWT_SECRET
+    if (!hanggentSecret) return null
+
+    const incomingHeaders = await readHeaders()
+    const authHeader = incomingHeaders.get('authorization') || ''
+    if (!authHeader.startsWith('Bearer ')) return null
+
+    const token = authHeader.slice(7)
+    if (!token) return null
+
+    let payload: jose.JWTPayload
+    try {
+        const secret = new TextEncoder().encode(hanggentSecret)
+        const result = await jose.jwtVerify(token, secret, { algorithms: ['HS256'] })
+        payload = result.payload
+    } catch {
+        return null
+    }
+
+    const hanggentUserId = payload.id as number | undefined
+    if (!hanggentUserId) return null
+
+    const hanggentName = `hanggent_${hanggentUserId}`
+
+    let user = await prisma.user.findUnique({ where: { name: hanggentName } })
+
+    if (!user) {
+        user = await prisma.$transaction(async (tx) => {
+            const newUser = await tx.user.create({
+                data: { name: hanggentName, email: null, password: null },
+            })
+            await tx.userBalance.create({
+                data: { userId: newUser.id, balance: 0, frozenAmount: 0, totalSpent: 0 },
+            })
+            return newUser
+        })
+    }
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
         }
     }
 }
@@ -173,6 +227,10 @@ export function serverError(message = 'Internal server error') {
 export async function getAuthSession(): Promise<AuthSession | null> {
     const internalSession = await getInternalTaskSession()
     if (internalSession) return internalSession
+
+    const bearerSession = await getHanggentBearerSession()
+    if (bearerSession) return bearerSession
+
     const session = await getServerSession(authOptions)
     return session as AuthSession | null
 }

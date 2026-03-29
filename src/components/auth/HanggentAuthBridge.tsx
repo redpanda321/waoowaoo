@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import { signIn, useSession } from 'next-auth/react'
+import { apiFetch } from '@/lib/api-fetch'
 
 /**
  * Listens for postMessage from the parent hanggent window.
  *
  * Flow:
- *  1. `hanggent-auth` → authenticate via NextAuth "hanggent" provider
+ *  1. `hanggent-auth` → store JWT in sessionStorage, authenticate via NextAuth "hanggent" provider
  *  2. sends `hanggent-auth-ok` back to parent
  *  3. parent fetches providers and sends `hanggent-sync-providers`
  *  4. bridge POSTs to /api/providers/sync → reloads if auth was fresh
@@ -31,6 +32,11 @@ export function HanggentAuthBridge() {
 
       // ── Auth handshake ──────────────────────────────────────────────
       if (data.type === 'hanggent-auth' && data.token) {
+        // Persist hanggent JWT for Bearer-auth in apiFetch()
+        try {
+          sessionStorage.setItem('hanggent_token', data.token)
+        } catch { /* storage unavailable */ }
+
         if (status === 'authenticated') {
           // Already logged in — just request provider sync
           window.parent.postMessage({ type: 'hanggent-auth-ok' }, event.origin)
@@ -68,7 +74,7 @@ export function HanggentAuthBridge() {
       // ── Provider sync ───────────────────────────────────────────────
       if (data.type === 'hanggent-sync-providers' && Array.isArray(data.providers)) {
         try {
-          const resp = await fetch('/api/providers/sync', {
+          const resp = await apiFetch('/api/providers/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
